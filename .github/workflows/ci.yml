@@ -53,7 +53,7 @@ jobs:
           run: mkdir -p "build" & cmake -B build && cmake --build build
       - uses: actions/upload-artifact@v4
         with:
-         name: ${{matrix.arch}}-${{ matrix.distro }}
+         name: ${{matrix.arch}}-${{ matrix.distro }}-${{ matrix.compiler }}
          path: build/
          
   macos-build-and-test:
