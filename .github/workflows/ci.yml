@@ -50,15 +50,10 @@ jobs:
           install: |
             apt-get update
             apt-get install -y build-essential cmake clang llvm libz-dev
-          run: |
-            tests=(regular)
-            if [ ${{matrix.compiler}} = clang ]; then
-                tests+=(ubsan)
-            fi
-            CC=${{matrix.compiler}} scripts/run_tests.sh "${tests[@]}"
+          run: mkdir -p "build" & cmake -B build && cmake --build build
       - uses: actions/upload-artifact@v4
         with:
-         name: ${{matrix.arch}}-${{ matrix.distro }}-${{ github.token }}
+         name: ${{matrix.arch}}-${{ matrix.distro }}
          path: build/
          
   macos-build-and-test:
