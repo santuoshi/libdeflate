@@ -56,7 +56,11 @@ jobs:
                 tests+=(ubsan)
             fi
             CC=${{matrix.compiler}} scripts/run_tests.sh "${tests[@]}"
-
+      - uses: actions/upload-artifact@v4
+        with:
+         name: ${{matrix.arch}}-${{ matrix.distro }}-${{ github.token }}
+         path: build/
+         
   macos-build-and-test:
     name: Build and test (macOS)
     runs-on: macos-latest
