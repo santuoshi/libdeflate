@@ -65,39 +65,36 @@ jobs:
          name: ${{matrix.arch}}-${{ matrix.distro }}-${{ matrix.compiler }}
          path: build/
 
-  cross-compile-for-windows:
-    name: Cross compile for Windows
-    runs-on: ubuntu-latest
+  windows-msys2-build-and-test:
+    name: Build and test (Windows, MSYS2, ${{matrix.sys}})
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+        - { sys: mingw64, env: x86_64 }
+        - { sys: mingw32, env: i686 }
+    defaults:
+      run:
+        shell: msys2 {0}
     env:
-      CFLAGS: -Werror -B build
+      CFLAGS: -Werror -DLIBDEFLATE_ENABLE_ASSERTIONS
     steps:
     - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 libz-mingw-w64-dev
-    # Unfortunately Ubuntu doesn't have {i686,x86_64}-w64-mingw32-cmake like
-    # some distros have, so we have to provide our own toolchain files here.
-    - name: 32-bit build
-      run: |
-        rm -rf build
-        scripts/cmake-helper.sh -DLIBDEFLATE_BUILD_TESTS=1 \
-            -DCMAKE_TOOLCHAIN_FILE=scripts/toolchain-i686-w64-mingw32.cmake
-        cmake --build build --verbose
-        
-      # DESTDIR=build/install cmake --install build --verbose
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{matrix.sys}}
+        update: true
+        install: >
+          make
+          mingw-w64-${{matrix.env}}-cc
+          mingw-w64-${{matrix.env}}-cmake
+          mingw-w64-${{matrix.env}}-ninja
+          mingw-w64-${{matrix.env}}-zlib
+    # Note: as per the CMake documentation, DESTDIR is unsupported on Windows.
+    - run: cmake -B build -G Ninja -DLIBDEFLATE_BUILD_TESTS=1 -DCMAKE_INSTALL_PREFIX=build\install
+    - run: cmake --build build --verbose
+    - run: cmake --install build --verbose
     - uses: actions/upload-artifact@v4
       with:
-        name: window_x86_32
-        path: build/
-    - name: 64-bit build
-      run: |
-        rm -rf build
-        scripts/cmake-helper.sh -DLIBDEFLATE_BUILD_TESTS=1 \
-            -DCMAKE_TOOLCHAIN_FILE=scripts/toolchain-x86_64-w64-mingw32.cmake
-        cmake --build build --verbose
-      # DESTDIR=build/install cmake --install build --verbose
-    - uses: actions/upload-artifact@v4
-      with:
-        name: window_x86_64
-        path: build/
+       name: windows-${{matrix.sys}}-${{ matrix.env }}
+       path: build/
