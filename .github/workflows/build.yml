@@ -1,0 +1,100 @@
+name: Build one
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: libdeflate branch
+        required: false
+        default: master
+
+jobs:
+  linux_x86_64-build:
+    name: Build and test (x86_64, ${{ matrix.os }}, ${{ matrix.compiler }})
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-20.04]
+        compiler: [gcc, clang]
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.compiler }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang llvm libz-dev valgrind
+    - run: sudo sysctl kernel.randomize_va_space=0 # https://bugs.launchpad.net/ubuntu/+source/llvm-toolchain-14/+bug/2048768
+    - run: mkdir -p "build" & cmake -B build && cmake --build build
+     - uses: actions/upload-artifact@v4
+        with:
+         name: linux-${{ matrix.compiler }}-x86
+         path: build/
+
+  other-arch-build:
+    name: Build and test (${{ matrix.arch }}, ${{ matrix.distro }}, ${{ matrix.compiler }})
+    strategy:
+      matrix:
+        include:
+        - { arch: armv6, distro: bullseye, compiler: gcc }
+        - { arch: armv6, distro: bullseye, compiler: clang }
+        - { arch: armv7, distro: bullseye, compiler: gcc }
+        - { arch: armv7, distro: bullseye, compiler: clang }
+        - { arch: aarch64, distro: bullseye, compiler: gcc }
+        - { arch: aarch64, distro: bullseye, compiler: clang }
+        - { arch: s390x, distro: bullseye, compiler: gcc }
+        - { arch: s390x, distro: bullseye, compiler: clang }
+        - { arch: ppc64le, distro: bullseye, compiler: gcc }
+        - { arch: ppc64le, distro: bullseye, compiler: clang }
+        - { arch: riscv64, distro: ubuntu_latest, compiler: gcc }
+        - { arch: riscv64, distro: ubuntu_latest, compiler: clang }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: uraimo/run-on-arch-action@v2.5.0
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get install -y build-essential cmake clang llvm libz-dev
+          run: mkdir -p "build" & cmake -B build && cmake --build build
+      - uses: actions/upload-artifact@v4
+        with:
+         name: ${{matrix.arch}}-${{ matrix.distro }}-${{ matrix.compiler }}
+         path: build/
+
+  cross-compile-for-windows:
+    name: Cross compile for Windows
+    runs-on: ubuntu-latest
+    env:
+      CFLAGS: -Werror -DLIBDEFLATE_ENABLE_ASSERTIONS
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 libz-mingw-w64-dev
+    # Unfortunately Ubuntu doesn't have {i686,x86_64}-w64-mingw32-cmake like
+    # some distros have, so we have to provide our own toolchain files here.
+    - name: 32-bit build
+      run: |
+        scripts/cmake-helper.sh -DLIBDEFLATE_BUILD_TESTS=1 \
+            -DCMAKE_TOOLCHAIN_FILE=scripts/toolchain-i686-w64-mingw32.cmake
+        cmake --build build --verbose
+        DESTDIR=build/install cmake --install build --verbose
+    - uses: actions/upload-artifact@v4
+      with:
+        name: window_x86_32
+        path: build/
+    - name: 64-bit build
+      run: |
+        scripts/cmake-helper.sh -DLIBDEFLATE_BUILD_TESTS=1 \
+            -DCMAKE_TOOLCHAIN_FILE=scripts/toolchain-x86_64-w64-mingw32.cmake
+        cmake --build build --verbose
+        DESTDIR=build/install cmake --install build --verbose
+    - uses: actions/upload-artifact@v4
+      with:
+        name: window_x86_64
+        path: build/
