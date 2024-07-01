@@ -77,7 +77,7 @@ jobs:
       run:
         shell: msys2 {0}
     env:
-      CFLAGS: -Werror ${{matrix.env}}-w64-mingw32-cmake
+      CFLAGS: -Werror
     steps:
     - uses: actions/checkout@v4
     - uses: msys2/setup-msys2@v2
@@ -89,9 +89,9 @@ jobs:
           mingw-w64-${{matrix.env}}-cc
           mingw-w64-${{matrix.env}}-cmake
           mingw-w64-${{matrix.env}}-ninja
-        # mingw-w64-${{matrix.env}}-zlib
+          mingw-w64-${{matrix.env}}-zlib
     # Note: as per the CMake documentation, DESTDIR is unsupported on Windows.
-    - run: cmake -B build -G Ninja -DLIBDEFLATE_BUILD_TESTS=1 -DCMAKE_INSTALL_PREFIX=build\install 
+    - run: cmake -B build -G Ninja -DCMAKE_INSTALL_PREFIX=build\install 
     - run: cmake --build build --verbose
     - run: cmake --install build --verbose
     - uses: actions/upload-artifact@v4
