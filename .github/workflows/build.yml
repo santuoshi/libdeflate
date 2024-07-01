@@ -26,10 +26,10 @@ jobs:
         sudo apt-get install -y clang llvm libz-dev valgrind
     - run: sudo sysctl kernel.randomize_va_space=0 # https://bugs.launchpad.net/ubuntu/+source/llvm-toolchain-14/+bug/2048768
     - run: mkdir -p "build" & cmake -B build && cmake --build build
-     - uses: actions/upload-artifact@v4
-        with:
-         name: linux-${{ matrix.compiler }}-x86
-         path: build/
+    - uses: actions/upload-artifact@v4
+      with:
+        name: linux-${{ matrix.compiler }}-x86
+        path: build/
 
   other-arch-build:
     name: Build and test (${{ matrix.arch }}, ${{ matrix.distro }}, ${{ matrix.compiler }})
