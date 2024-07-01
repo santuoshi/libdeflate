@@ -89,9 +89,9 @@ jobs:
           mingw-w64-${{matrix.env}}-cc
           mingw-w64-${{matrix.env}}-cmake
           mingw-w64-${{matrix.env}}-ninja
-          mingw-w64-${{matrix.env}}-zlib
+        # mingw-w64-${{matrix.env}}-zlib
     # Note: as per the CMake documentation, DESTDIR is unsupported on Windows.
-    - run: cmake -B build -G Ninja -DLIBDEFLATE_BUILD_TESTS=1 -DCMAKE_INSTALL_PREFIX=build\install -DCMAKE_TOOLCHAIN_FILE=scripts/toolchain-${{matrix.env}}-w64-mingw32.cmake
+    - run: cmake -B build -G Ninja -DLIBDEFLATE_BUILD_TESTS=1 -DCMAKE_INSTALL_PREFIX=build\install 
     - run: cmake --build build --verbose
     - run: cmake --install build --verbose
     - uses: actions/upload-artifact@v4
