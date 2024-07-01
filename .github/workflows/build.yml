@@ -10,7 +10,7 @@ on:
 
 jobs:
   linux_x86_64-build:
-    name: Build and test (x86_64, ${{ matrix.os }}, ${{ matrix.compiler }})
+    name: Build on (x86_64, ${{ matrix.os }}, ${{ matrix.compiler }})
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-20.04]
@@ -28,7 +28,7 @@ jobs:
     - run: mkdir -p "build" & cmake -B build && cmake --build build
     - uses: actions/upload-artifact@v4
       with:
-        name: linux-${{ matrix.compiler }}-x86
+        name: linux-${{ matrix.os }}-${{ matrix.compiler }}-x86
         path: build/
 
   other-arch-build:
@@ -80,20 +80,23 @@ jobs:
     # some distros have, so we have to provide our own toolchain files here.
     - name: 32-bit build
       run: |
+        rm -rf build
         scripts/cmake-helper.sh -DLIBDEFLATE_BUILD_TESTS=1 \
             -DCMAKE_TOOLCHAIN_FILE=scripts/toolchain-i686-w64-mingw32.cmake
         cmake --build build --verbose
-        DESTDIR=build/install cmake --install build --verbose
+        
+      # DESTDIR=build/install cmake --install build --verbose
     - uses: actions/upload-artifact@v4
       with:
         name: window_x86_32
         path: build/
     - name: 64-bit build
       run: |
+        rm -rf build
         scripts/cmake-helper.sh -DLIBDEFLATE_BUILD_TESTS=1 \
             -DCMAKE_TOOLCHAIN_FILE=scripts/toolchain-x86_64-w64-mingw32.cmake
         cmake --build build --verbose
-        DESTDIR=build/install cmake --install build --verbose
+      # DESTDIR=build/install cmake --install build --verbose
     - uses: actions/upload-artifact@v4
       with:
         name: window_x86_64
